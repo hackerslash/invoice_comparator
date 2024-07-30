@@ -9,6 +9,7 @@ from pdf2image import convert_from_path
 import os
 
 
+# Function to extract text from a given PDF file
 def extractTextFromPdf(file_path):
     text = ""
     with pdfplumber.open(file_path) as pdf:
@@ -17,6 +18,7 @@ def extractTextFromPdf(file_path):
     return text
 
 
+# Function to extract layout features (tables) from a given PDF file
 def extractLayoutFeatures(file_path):
     layout_features = []
     with pdfplumber.open(file_path) as pdf:
@@ -28,12 +30,14 @@ def extractLayoutFeatures(file_path):
     return layout_features
 
 
+# Function to calculate cosine similarity between two texts
 def calculateCosineSimilarity(text1, text2):
     vectorizer = TfidfVectorizer()
     vectors = vectorizer.fit_transform([text1, text2]).toarray()
     return cosine_similarity(vectors)[0, 1]
 
 
+# Helper function to flatten nested list of features into a string
 def flattenFeature(feature):
     flattened = []
     for sublist in feature:
@@ -43,17 +47,20 @@ def flattenFeature(feature):
     return " ".join(flattened)
 
 
+# Function to calculate Levenshtein similarity ratio between two sets of features
 def calculateLevenshteinSimilarity(feature1, feature2):
     flattened1 = flattenFeature(feature1)
     flattened2 = flattenFeature(feature2)
     return fuzz.ratio(flattened1, flattened2) / 100
 
 
+# Function to convert a PDF file to an image (first page)
 def convertPdfToImage(pdf_path):
     images = convert_from_path(pdf_path)
     return np.array(images[0])
 
 
+# Function to calculate structural similarity between two PDF files
 def calculateStructuralSimilarity(pdf1_path, pdf2_path):
     img1 = convertPdfToImage(pdf1_path)
     img2 = convertPdfToImage(pdf2_path)
@@ -66,11 +73,13 @@ def calculateStructuralSimilarity(pdf1_path, pdf2_path):
     return ssim(img1[:min_height, :min_width], img2[:min_height, :min_width])
 
 
+# Function to combine different similarity scores into a total score
 def combineScores(text_similarity, layout_similarity, levenshtein_similarity, weights=(0.4, 0.4, 0.2)):
     weighted_scores = (text_similarity * weights[0], layout_similarity * weights[1], levenshtein_similarity * weights[2])
     return sum(weighted_scores)
 
 
+# Function to compare an input invoice with a list of database invoices
 def compareInvoiceToDatabase(input_invoice, database_invoices):
     print(f"Comparing invoice: {input_invoice}")
     input_text = extractTextFromPdf(input_invoice)
@@ -94,16 +103,20 @@ def compareInvoiceToDatabase(input_invoice, database_invoices):
         print("__________________________")
 
 
+# Function to get paths of all PDFs in a given directory
 def get_invoice_paths(directory):
     return [{"file_path": os.path.join(directory, f)} for f in os.listdir(directory) if f.lower().endswith('.pdf')]
 
 
+# Main function to run the invoice comparison tool
 def main():
     import sys
     if len(sys.argv) == 1:
+        # Interactive mode
         database_directory = input("Enter the directory path containing database invoices: ")
         input_invoice = input("Enter the path of the invoice to compare: ")
     elif len(sys.argv) == 2 and sys.argv[1] == '--help':
+        # Display help message
         print("Usage:\n------")
         print("To run the module from the terminal and interactively provide invoice paths:")
         print("$ python invoice_comparator.py")
@@ -111,6 +124,7 @@ def main():
         print("$ python invoice_comparator.py <database_directory> <input_invoice_path>")
         return
     else:
+        # Command line arguments mode
         database_directory = sys.argv[1]
         input_invoice = sys.argv[2]
 
